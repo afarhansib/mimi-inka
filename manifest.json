@@ -1,0 +1,46 @@
+{
+    "format_version": 2,
+    "metadata": {
+      "authors": [
+        "yotbu"
+      ]
+    },
+    "header": {
+      "name": "Mimi Inka",
+      "description": "Custom Gamertag and Chat Rank for Minecraft Bedrock Server",
+      "uuid": "0194a88f-3d26-7957-98ff-b0e979b68fda",
+      "version": [
+        1,
+        0,
+        0
+      ],
+      "min_engine_version": [
+        1,
+        20,
+        0
+      ]
+    },
+    "modules": [
+      {
+        "type": "script",
+        "language": "javascript",
+        "uuid": "0194a88f-636a-7a4a-803e-52127c33e8b1",
+        "entry": "scripts/main.js",
+        "version": [
+          0,
+          1,
+          0
+        ]
+      }
+    ],
+    "dependencies": [
+      {
+        "module_name": "@minecraft/server",
+        "version": "1.17.0-beta"
+      },
+      {
+        "module_name": "@minecraft/server-ui",
+        "version": "1.4.0-beta"
+      }
+    ]
+  }
