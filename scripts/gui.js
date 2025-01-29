@@ -107,7 +107,7 @@ export class CommandGUI {
             // Show each glyph with its hex position 
             const glyphOptions = glyphs.map((glyph, index) => {
                 const hex = index.toString(16).padStart(2, '0').toUpperCase();
-                return `${glyph} (${hex})`; // Shows like "⚔ (A4)"
+                return `${hex} ${glyph}`; // Shows like "⚔ (A4)"
             });
             form.dropdown("Glyph:", glyphOptions, 0);
             form.textField("Custom Text:", "Enter custom text (optional)");
