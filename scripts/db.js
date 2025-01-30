@@ -97,12 +97,10 @@ class PlayerCustomizationDB extends Database {
     // Get player join info
     getPlayerInfo(name) {
         const playerLogs = this.get("playerLogs", {});
-        return playerLogs[name] || null;
+        // return playerLogs[name] || null;
+        return playerLogs || null;
     }
 }
-
-// Database for configuration
-export const configDB = new Database("config");
 
 // Database for mutes
 export const muteDB = new Database("mute");

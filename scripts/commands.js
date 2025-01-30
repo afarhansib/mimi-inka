@@ -36,18 +36,18 @@ class CommandManager {
 
         // Check permissions using configured tags
         if (command.permission === "admin" && !configManager.hasTag(player, "adminTag")) {
-            player.sendMessage("§cYou don't have permission to use this command!");
+            player.sendMessage(`${configManager.get("chatPrefix")}§cYou don't have permission to use this command!`);
             return true;
         }
         if (command.permission !== "none" && command.permission !== "admin" && !player.hasTag(command.permission)) {
-            player.sendMessage("§cYou don't have permission to use this command!");
+            player.sendMessage(`${configManager.get("chatPrefix")}§cYou don't have permission to use this command!`);
             return true;
         }
 
         try {
             command.execute(player, args);
         } catch (error) {
-            player.sendMessage("§cAn error occurred while executing the command!");
+            player.sendMessage(`${configManager.get("chatPrefix")}§cAn error occurred while executing the command!`);
             console.warn(`Error executing command ${name}: ${error}`);
         }
         return true;
@@ -73,9 +73,9 @@ commandManager.register("help", {
                 return player.hasTag(cmd.permission);
             });
 
-        player.sendMessage("§6=== Available Commands ===");
+        player.sendMessage(`${configManager.get("chatPrefix")}§6=== Available Commands ===`);
         for (const cmd of commands) {
-            player.sendMessage(`§e!${cmd.name}§7: ${cmd.description}`);
+            player.sendMessage(`§e${configManager.get("prefixes")[0]}${cmd.name}§7: ${cmd.description}`);
         }
     }
 });
@@ -95,46 +95,59 @@ commandManager.register("setingame", {
     description: "Set in-game customization for a player",
     permission: "admin",
     execute: (player, args) => {
-        if (args.length < 3) {
-            player.sendMessage([
-                "§cUsage: !setingame <player> <type> <value> [position]",
-                "§7Types: title, nametag",
-                "§7Position (title only): top, before, after, below"
-            ].join("\n"));
+        let playerName, type, value, position;
+
+        // Check for quoted player name
+        const quotedNameMatch = args.join(' ').match(/"([^"]+)"/);
+        if (quotedNameMatch) {
+            playerName = quotedNameMatch[1]; // Captures the name without quotes
+            const startIndex = args.join(' ').indexOf(quotedNameMatch[0]) + quotedNameMatch[0].length; // Find the end of the quoted name
+            const remainingArgs = args.join(' ').slice(startIndex).trim().split(' '); // Get remaining arguments
+            type = remainingArgs[0]; // First argument after the player name
+            value = remainingArgs.slice(1).join(' '); // Join the rest as value
+        } else {
+            // Fallback to standard argument parsing
+            playerName = args[0]; // First argument is player name
+            type = args[1]; // Second argument is type
+            const valueParts = args.slice(2); // Remaining arguments are value parts
+            value = valueParts.join(" "); // Join the rest as value
+        }
+
+        // Remove leading @ symbol from player name
+        if (playerName?.startsWith('@')) {
+            playerName = playerName.slice(1);
+        }
+
+        // Validate type and handle logic...
+        if (!playerName || !type || !value) {
+            player.sendMessage(`${configManager.get("chatPrefix")}§cUsage: ${configManager.get("prefixes")[0]}setingame <player> <type> <value> [position]`);
             return;
         }
-        const [targetName, type, ...valueParts] = args;
 
         if (!["title", "nametag"].includes(type)) {
-            player.sendMessage("§cInvalid type! Use: title, nametag");
+            player.sendMessage(`${configManager.get("chatPrefix")}§cInvalid type! Use: title, nametag`);
             return;
         }
 
-        let value, position;
-        if (type === "title" && ["top", "before", "after", "below"].includes(valueParts[valueParts.length - 1])) {
-            position = valueParts.pop();
-            value = valueParts.join(" ");
+        if (type === "title" && ["top", "before", "after", "below"].includes(value.split(" ").pop())) {
+            position = value.split(" ").pop();
+            value = value.replace(position, "").trim();
         } else {
-            value = valueParts.join(" ");
             position = "top"; // Default position
         }
 
-        if (type === "title") {
-            playerDB.setCustomization(targetName, type, { text: value, position }, "ingame");
-        } else {
-            playerDB.setCustomization(targetName, type, value, "ingame");
-        }
+        playerDB.setCustomization(playerName, type, type === "title" ? { text: value, position } : value, "ingame");
 
         // Update in-game display if player is online
-        const targetPlayer = [...world.getPlayers()].find(p => p.name === targetName);
+        const targetPlayer = [...world.getPlayers()].find(p => p.name === playerName);
         if (targetPlayer) {
             const currentName = type === "title"
-                ? (playerDB.getCustomization(targetName, "nametag", "ingame") || targetName)
+                ? (playerDB.getCustomization(playerName, "nametag", "ingame") || playerName)
                 : value;
 
             system.run(() => {
                 // Reset nametag first
-                targetPlayer.nameTag = targetName;
+                targetPlayer.nameTag = playerName;
 
                 if (type === "title") {
                     // Apply title with position
@@ -153,7 +166,7 @@ commandManager.register("setingame", {
                             break;
                     }
                 } else {
-                    const title = playerDB.getCustomization(targetName, "title", "ingame");
+                    const title = playerDB.getCustomization(playerName, "title", "ingame");
                     if (title) {
                         // Apply title with new nametag
                         switch (title.position) {
@@ -178,7 +191,7 @@ commandManager.register("setingame", {
             });
         }
 
-        player.sendMessage(`§aSet in-game ${type} for ${targetName} to: ${value}${type === "title" ? ` (${position})` : ''}`);
+        player.sendMessage(configManager.get("chatPrefix") + `§aSet in-game ${type} for ${playerName} to: ${value}${type === "title" ? ` (${position})` : ''}`);
     }
 });
 
@@ -186,23 +199,42 @@ commandManager.register("setchat", {
     description: "Set chat customization for a player",
     permission: "admin",
     execute: (player, args) => {
-        if (args.length < 3) {
-            player.sendMessage([
-                "§cUsage: !setchat <player> <type> <value>",
-                "§7Types: title, nametag"
-            ].join("\n"));
+        let playerName, type, value;
+
+        // Check for quoted player name
+        const quotedNameMatch = args.join(' ').match(/"([^"]+)"/);
+        if (quotedNameMatch) {
+            playerName = quotedNameMatch[1]; // Captures the name without quotes
+            const startIndex = args.join(' ').indexOf(quotedNameMatch[0]) + quotedNameMatch[0].length; // Find the end of the quoted name
+            const remainingArgs = args.join(' ').slice(startIndex).trim().split(' '); // Get remaining arguments
+            type = remainingArgs[0]; // First argument after the player name
+            value = remainingArgs.slice(1).join(' '); // Join the rest as value
+        } else {
+            // Fallback to standard argument parsing
+            playerName = args[0]; // First argument is player name
+            type = args[1]; // Second argument is type
+            const valueParts = args.slice(2); // Remaining arguments are value parts
+            value = valueParts.join(" "); // Join the rest as value
+        }
+
+        // Remove leading @ symbol from player name
+        if (playerName?.startsWith('@')) {
+            playerName = playerName.slice(1);
+        }
+
+        // Validate type and handle logic...
+        if (!playerName || !type || !value) {
+            player.sendMessage(`${configManager.get("chatPrefix")}§cUsage: ${configManager.get("prefixes")[0]}setchat <player> <type> <value>`);
             return;
         }
-        const [targetName, type, ...valueParts] = args;
-        const value = valueParts.join(" ");
 
         if (!["title", "nametag"].includes(type)) {
-            player.sendMessage("§cInvalid type! Use: title, nametag");
+            player.sendMessage(`${configManager.get("chatPrefix")}§cInvalid type! Use: title, nametag`);
             return;
         }
 
-        playerDB.setCustomization(targetName, type, value, "chat");
-        player.sendMessage(`§aSet chat ${type} for ${targetName} to: ${value}`);
+        playerDB.setCustomization(playerName, type, value, "chat");
+        player.sendMessage(`${configManager.get("chatPrefix")}§aSet chat ${type} for ${playerName} to: ${value}`);
     }
 });
 
@@ -211,60 +243,77 @@ commandManager.register("remove", {
     permission: "admin",
     aliases: ["removecustom"],
     execute: (player, args) => {
-        if (args.length < 3) {
-            player.sendMessage([
-                "§cUsage: !remove <player> <type> <mode>",
-                "§7Types: title, nametag",
-                "§7Modes: chat, ingame"
-            ].join("\n"));
+        let playerName, type, mode;
+
+        // Check for quoted player name
+        const quotedNameMatch = args.join(' ').match(/"([^"]+)"/);
+        if (quotedNameMatch) {
+            playerName = quotedNameMatch[1]; // Captures the name without quotes
+            const startIndex = args.join(' ').indexOf(quotedNameMatch[0]) + quotedNameMatch[0].length; // Find the end of the quoted name
+            const remainingArgs = args.join(' ').slice(startIndex).trim().split(' '); // Get remaining arguments
+            type = remainingArgs[0]; // First argument after the player name
+            mode = remainingArgs[1]; // Second argument is mode
+        } else {
+            // Fallback to standard argument parsing
+            playerName = args[0]; // First argument is player name
+            type = args[1]; // Second argument is type
+            mode = args[2]; // Third argument is mode
+        }
+
+        // Remove leading @ symbol from player name
+        if (playerName?.startsWith('@')) {
+            playerName = playerName.slice(1);
+        }
+
+        // Validate type and mode
+        if (!playerName || !type || !mode) {
+            player.sendMessage(`${configManager.get("chatPrefix")}§cUsage: ${configManager.get("prefixes")[0]}remove <player> <type> <mode>`);
             return;
         }
-        const [targetName, type, mode] = args;
 
         if (!["title", "nametag"].includes(type)) {
-            player.sendMessage("§cInvalid type! Use: title, nametag");
+            player.sendMessage(`${configManager.get("chatPrefix")}§cInvalid type! Use: title, nametag`);
             return;
         }
 
         if (!["chat", "ingame"].includes(mode)) {
-            player.sendMessage("§cInvalid mode! Use: chat, ingame");
+            player.sendMessage(`${configManager.get("chatPrefix")}§cInvalid mode! Use: chat, ingame`);
             return;
         }
 
-        playerDB.removeCustomization(targetName, type, mode);
-        player.sendMessage(`§aRemoved ${mode} ${type} for ${targetName}`);
+        playerDB.removeCustomization(playerName, type, mode);
+        player.sendMessage(`${configManager.get("chatPrefix")}§aRemoved ${mode} ${type} for ${playerName}`);
 
         // Reset in-game display if applicable
         if (mode === "ingame") {
-            const targetPlayer = [...world.getPlayers()].find(p => p.name === targetName);
+            const targetPlayer = [...world.getPlayers()].find(p => p.name === playerName);
             if (targetPlayer) {
                 system.run(() => {
-                    if (type === "nametag") {
-                        const title = playerDB.getCustomization(targetName, "title", "ingame");
-                        if (title) {
-                            // Apply title with new nametag
-                            switch (title.position) {
-                                case "top":
-                                    targetPlayer.nameTag = `${title.text}\n${targetName}`;
-                                    break;
-                                case "before":
-                                    targetPlayer.nameTag = `${title.text} ${targetName}`;
-                                    break;
-                                case "after":
-                                    targetPlayer.nameTag = `${targetName} ${title.text}`;
-                                    break;
-                                case "below":
-                                    targetPlayer.nameTag = `${targetName}\n${title.text}`;
-                                    break;
-                            }
-                        } else {
-                            // No title, just set nametag
-                            targetPlayer.nameTag = targetName;
+                    const title = playerDB.getCustomization(playerName, "title", "ingame");
+                    if (title) {
+                        // Apply title with new nametag
+                        switch (title.position) {
+                            case "top":
+                                targetPlayer.nameTag = `${title.text}\n${playerName}`;
+                                break;
+                            case "before":
+                                targetPlayer.nameTag = `${title.text} ${playerName}`;
+                                break;
+                            case "after":
+                                targetPlayer.nameTag = `${playerName} ${title.text}`;
+                                break;
+                            case "below":
+                                targetPlayer.nameTag = `${playerName}\n${title.text}`;
+                                break;
                         }
-                    } else if (type === "title") {
-                        // Preserve nametag if exists
-                        const nametag = playerDB.getCustomization(targetName, "nametag", "ingame");
-                        targetPlayer.nameTag = nametag || targetName;
+                    }
+                    else {
+                        const nametag = playerDB.getCustomization(playerName, "nametag", "ingame");
+                        if (nametag) {
+                            targetPlayer.nameTag = nametag;
+                        } else {
+                            targetPlayer.nameTag = playerName;
+                        }
                     }
                 });
             }
@@ -288,8 +337,8 @@ commandManager.register("muteall", {
 
         muteDB.set("muteSettings", muteSettings);
         player.sendMessage(muteSettings[player.name].muteAll
-            ? "§aAll players will now be muted (except those you unmute)"
-            : "§aAll players will now be unmuted (except those you mute)"
+            ? `${configManager.get("chatPrefix")}§aAll players will now be muted (except those you unmute)`
+            : `${configManager.get("chatPrefix")}§aAll players will now be unmuted (except those you mute)`
         );
     }
 });
@@ -299,34 +348,40 @@ commandManager.register("mute", {
     permission: "none",
     execute: (player, args) => {
         if (args.length < 1) {
-            player.sendMessage("§cUsage: !mute <player>");
+            player.sendMessage(`${configManager.get("chatPrefix")}§cUsage: !mute <player>`);
             return;
         }
-        const targetName = args[0];
+
+        let targetName;
+        // Check for quoted player name
+        const quotedNameMatch = args.join(' ').match(/"([^"]+)"/);
+        if (quotedNameMatch) {
+            targetName = quotedNameMatch[1]; // Captures the name without quotes
+        } else {
+            targetName = args[0]; // First argument is player name
+        }
+
+        // Remove leading @ symbol from player name
+        if (targetName.startsWith('@')) {
+            targetName = targetName.slice(1);
+        }
 
         let muteSettings = muteDB.get("muteSettings", {});
-        muteSettings[player.name] = muteSettings[player.name] || {};
+        muteSettings[player.name] = muteSettings[player.name] || { muted: [], exceptions: [] };
 
-        // If muteAll is enabled, this player becomes an exception
-        if (muteSettings[player.name].muteAll) {
-            muteSettings[player.name].exceptions = muteSettings[player.name].exceptions || [];
-            if (muteSettings[player.name].exceptions.includes(targetName)) {
-                player.sendMessage(`§ePlayer ${targetName} is already muted!`);
-                return;
-            }
-            muteSettings[player.name].exceptions = muteSettings[player.name].exceptions.filter(name => name !== targetName);
-        } else {
-            // Regular mute list
-            muteSettings[player.name].muted = muteSettings[player.name].muted || [];
-            if (muteSettings[player.name].muted.includes(targetName)) {
-                player.sendMessage(`§ePlayer ${targetName} is already muted!`);
-                return;
-            }
+        // Mute logic
+        if (!muteSettings[player.name].muted.includes(targetName)) {
             muteSettings[player.name].muted.push(targetName);
+            const index = muteSettings[player.name].exceptions.indexOf(targetName);
+            if (index !== -1) {
+                muteSettings[player.name].exceptions.splice(index, 1); // Remove from exceptions if muted
+            }
+            player.sendMessage(`${configManager.get("chatPrefix")}§aMuted player: ${targetName}`);
+        } else {
+            player.sendMessage(`${configManager.get("chatPrefix")}§ePlayer ${targetName} is already muted!`);
         }
 
         muteDB.set("muteSettings", muteSettings);
-        player.sendMessage(`§aMuted player: ${targetName}`);
     }
 });
 
@@ -335,36 +390,40 @@ commandManager.register("unmute", {
     permission: "none",
     execute: (player, args) => {
         if (args.length < 1) {
-            player.sendMessage("§cUsage: !unmute <player>");
+            player.sendMessage(`${configManager.get("chatPrefix")}§cUsage: !unmute <player>`);
             return;
         }
-        const targetName = args[0];
+
+        let targetName;
+        // Check for quoted player name
+        const quotedNameMatch = args.join(' ').match(/"([^"]+)"/);
+        if (quotedNameMatch) {
+            targetName = quotedNameMatch[1]; // Captures the name without quotes
+        } else {
+            targetName = args[0]; // First argument is player name
+        }
+
+        // Remove leading @ symbol from player name
+        if (targetName.startsWith('@')) {
+            targetName = targetName.slice(1);
+        }
 
         let muteSettings = muteDB.get("muteSettings", {});
-        muteSettings[player.name] = muteSettings[player.name] || {};
+        muteSettings[player.name] = muteSettings[player.name] || { muted: [], exceptions: [] };
 
-        // If muteAll is enabled, add to exceptions
-        if (muteSettings[player.name].muteAll) {
-            muteSettings[player.name].exceptions = muteSettings[player.name].exceptions || [];
-            if (!muteSettings[player.name].exceptions.includes(targetName)) {
-                muteSettings[player.name].exceptions.push(targetName);
-            } else {
-                player.sendMessage(`§ePlayer ${targetName} is already unmuted!`);
-                return;
-            }
-        } else {
-            // Regular mute list
-            muteSettings[player.name].muted = muteSettings[player.name].muted || [];
+        if (!muteSettings[player.name].exceptions.includes(targetName)) {
+            muteSettings[player.name].exceptions.push(targetName);
             const index = muteSettings[player.name].muted.indexOf(targetName);
-            if (index === -1) {
-                player.sendMessage(`§ePlayer ${targetName} is not muted!`);
-                return;
+            if (index !== -1) {
+                muteSettings[player.name].muted.splice(index, 1); // Remove from muted if unmuted
             }
-            muteSettings[player.name].muted.splice(index, 1);
+            player.sendMessage(`${configManager.get("chatPrefix")}§aUnmuted player: ${targetName}`);
+        } else {
+            player.sendMessage(`${configManager.get("chatPrefix")}§ePlayer ${targetName} is already unmuted!`);
+            return;
         }
 
         muteDB.set("muteSettings", muteSettings);
-        player.sendMessage(`§aUnmuted player: ${targetName}`);
     }
 });
 
@@ -378,9 +437,9 @@ commandManager.register("mutelist", {
         if (playerSettings.muteAll) {
             const exceptions = playerSettings.exceptions || [];
             if (exceptions.length === 0) {
-                player.sendMessage("§6All players are muted with no exceptions!");
+                player.sendMessage(configManager.get("chatPrefix") + "§6All players are muted with no exceptions!");
             } else {
-                player.sendMessage("§6=== Mute Status ===");
+                player.sendMessage(configManager.get("chatPrefix") + "§6=== Mute Status ===");
                 player.sendMessage("§7All players are muted except:");
                 for (const name of exceptions) {
                     player.sendMessage(`§7- §f${name}`);
@@ -389,10 +448,10 @@ commandManager.register("mutelist", {
         } else {
             const muted = playerSettings.muted || [];
             if (muted.length === 0) {
-                player.sendMessage("§eYou haven't muted any players!");
+                player.sendMessage(configManager.get("chatPrefix") + "§eYou haven't muted any players!");
                 return;
             }
-            player.sendMessage("§6=== Muted Players ===");
+            player.sendMessage(configManager.get("chatPrefix") + "§6=== Muted Players ===");
             for (const name of muted) {
                 player.sendMessage(`§7- §f${name}`);
             }
@@ -409,8 +468,8 @@ commandManager.register("alias", {
         playerDB.set("showAlias", showAlias);
 
         player.sendMessage(showAlias[player.name]
-            ? "§aReal player gamertags will now be shown in chat"
-            : "§aReal player gamertags will now be hidden in chat"
+            ? configManager.get("chatPrefix") + "§aReal player gamertags will now be shown in chat"
+            : configManager.get("chatPrefix") + "§aReal player gamertags will now be hidden in chat"
         );
     }
 });

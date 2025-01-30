@@ -25,7 +25,7 @@ world.beforeEvents.chatSend.subscribe(event => {
         // Try to execute the command
         const handled = commandManager.execute(sender, cmd, args);
         if (!handled) {
-            sender.sendMessage("§cUnknown command! Type !help for available commands");
+            sender.sendMessage(configManager.get("chatPrefix") + "§cUnknown command! Type !help for available commands");
         }
         return;
     }
@@ -34,7 +34,7 @@ world.beforeEvents.chatSend.subscribe(event => {
     const isGlobalMute = configManager.get("globalMute");
     if (isGlobalMute) {
         event.cancel = true;
-        sender.sendMessage("§cGlobal mute is active! Chat is disabled.");
+        sender.sendMessage(configManager.get("chatPrefix") + "§cGlobal mute is active! Chat is disabled.");
         return;
     }
 
@@ -49,14 +49,18 @@ world.beforeEvents.chatSend.subscribe(event => {
     for (const player of world.getPlayers()) {
         // Check mute settings
         const muteSettings = muteDB.get("muteSettings", {});
-        const playerMuteSettings = muteSettings[player.name] || {};
-        
+        // Initialize playerMuteSettings with arrays
+        const playerMuteSettings = muteSettings[player.name] || { muted: [], exceptions: [] };
+    
+        // console.log(`Checking player ${player.name}:`);
+        // console.log(JSON.stringify(playerMuteSettings, null, 2));
+    
         // Player is muted if:
         // 1. muteAll is enabled and they're not in exceptions, OR
         // 2. muteAll is disabled and they're in the muted list
-        const isMuted = (playerMuteSettings.muteAll && !playerMuteSettings.exceptions?.includes(sender.name)) ||
-                       (!playerMuteSettings.muteAll && playerMuteSettings.muted?.includes(sender.name));
-        
+        const isMuted = (playerMuteSettings.muteAll && !playerMuteSettings.exceptions.includes(sender.name)) ||
+                        (!playerMuteSettings.muteAll && playerMuteSettings.muted.includes(sender.name));
+    
         if (!isMuted) {
             // Check if player has aliases shown (hidden by default)
             const showAlias = playerDB.get("showAlias", {});
@@ -64,7 +68,7 @@ world.beforeEvents.chatSend.subscribe(event => {
             // Only show real name if player has showAlias enabled AND sender has a custom nametag
             const showRealName = showAlias[player.name] && hasCustomNametag;
             const senderDisplay = showRealName ? `${displayName} (${sender.name})` : displayName;
-            
+    
             const formattedMsg = `${title}${title ? ' ' : ''}<${senderDisplay}> ${msg}`;
             player.sendMessage(formattedMsg);
             messageShown = true;
@@ -73,7 +77,7 @@ world.beforeEvents.chatSend.subscribe(event => {
 
     // If message wasn't shown to anyone, let the sender know
     if (!messageShown) {
-        sender.sendMessage("§cNobody can see your messages because everyone has muted you!");
+        sender.sendMessage(configManager.get("chatPrefix") + "§cNobody can see your messages because everyone has muted you!");
     }
 });
 
@@ -90,9 +94,9 @@ world.afterEvents.playerSpawn.subscribe((event) => {
     const player = event.player; 
     
     // Reset nametag first
-    system.run(() => {
-        player.nameTag = player.name;
-    });
+    // system.run(() => {
+    //     player.nameTag = player.name;
+    // });
     
     // Apply in-game customizations
     const inGameTitle = playerDB.getCustomization(player.name, "title", "ingame");

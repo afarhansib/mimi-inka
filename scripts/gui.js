@@ -6,7 +6,7 @@ import { configManager } from "./config.js";
 export class CommandGUI {
     static async showMainMenu(player) {
         const form = new ActionFormData()
-            .title("Command Menu")
+            .title("§lMimi Inka§r Menu")
             .body("Select an action:")
             .button("Manage Titles")
             .button("Manage Nametags")
@@ -127,7 +127,7 @@ export class CommandGUI {
         const [, , , modeIndex, ...rest] = response.formValues;
 
         if (!targetName) {
-            player.sendMessage("§cPlease specify a player!");
+            player.sendMessage(configManager.get("chatPrefix") + "§cPlease specify a player!");
             return;
         }
 
@@ -138,7 +138,7 @@ export class CommandGUI {
             const [useGlyph, glyphIndex, customText, positionIndex] = rest;
             if (!useGlyph && !customText) {
                 playerDB.removeCustomization(targetName, "title", mode);
-                player.sendMessage(`§aRemoved ${mode} title for ${targetName}`);
+                player.sendMessage(configManager.get("chatPrefix") + `§aRemoved ${mode} title for ${targetName}`);
                 return;
             }
 
@@ -152,14 +152,14 @@ export class CommandGUI {
         if (title) {
             if (mode === "ingame") {
                 playerDB.setCustomization(targetName, "title", { text: title, position }, mode);
-                player.sendMessage(`§aSet ${mode} title for ${targetName} to: ${title} (${position})`);
+                player.sendMessage(configManager.get("chatPrefix") + `§aSet ${mode} title for ${targetName} to: ${title} (${position})`);
             } else {
                 playerDB.setCustomization(targetName, "title", title, mode);
-                player.sendMessage(`§aSet ${mode} title for ${targetName} to: ${title}`);
+                player.sendMessage(configManager.get("chatPrefix") + `§aSet ${mode} title for ${targetName} to: ${title}`);
             }
         } else {
             playerDB.removeCustomization(targetName, "title", mode);
-            player.sendMessage(`§aRemoved ${mode} title for ${targetName}`);
+            player.sendMessage(configManager.get("chatPrefix") + `§aRemoved ${mode} title for ${targetName}`);
         }
 
         // Update in-game display if needed
@@ -223,7 +223,7 @@ export class CommandGUI {
         const [, , , modeIndex, ...rest] = response.formValues;
 
         if (!targetName) {
-            player.sendMessage("§cPlease specify a player!");
+            player.sendMessage(configManager.get("chatPrefix") + "§cPlease specify a player!");
             return;
         }
 
@@ -234,7 +234,7 @@ export class CommandGUI {
             const [useGlyph, glyphIndex, customText] = rest;
             if (!useGlyph && !customText) {
                 playerDB.removeCustomization(targetName, "nametag", mode);
-                player.sendMessage(`§aRemoved ${mode} nametag for ${targetName}`);
+                player.sendMessage(configManager.get("chatPrefix") + `§aRemoved ${mode} nametag for ${targetName}`);
                 return;
             }
             nametag = useGlyph ? glyphs[glyphIndex] : customText;
@@ -244,7 +244,7 @@ export class CommandGUI {
 
         if (nametag) {
             playerDB.setCustomization(targetName, "nametag", nametag, mode);
-            player.sendMessage(`§aSet ${mode} nametag for ${targetName} to: ${nametag}`);
+            player.sendMessage(configManager.get("chatPrefix") + `§aSet ${mode} nametag for ${targetName} to: ${nametag}`);
 
             // Update in-game display if needed
             if (mode === "ingame") {
@@ -277,7 +277,7 @@ export class CommandGUI {
             }
         } else {
             playerDB.removeCustomization(targetName, "nametag", mode);
-            player.sendMessage(`§aRemoved ${mode} nametag for ${targetName}`);
+            player.sendMessage(configManager.get("chatPrefix") + `§aRemoved ${mode} nametag for ${targetName}`);
         }
     }
 
@@ -319,10 +319,10 @@ export class CommandGUI {
                 }
                 muteSettings[player.name] = playerSettings;
                 muteDB.set("muteSettings", muteSettings);
-                player.sendMessage(playerSettings.muteAll 
+                player.sendMessage(configManager.get("chatPrefix") + (playerSettings.muteAll 
                     ? "§aAll players will now be muted (except those you unmute)"
                     : "§aAll players will now be unmuted (except those you mute)"
-                );
+                ));
                 await this.showMuteManager(player);
                 break;
             case 1:
@@ -348,7 +348,7 @@ export class CommandGUI {
 
         const [targetName] = response.formValues;
         if (!targetName) {
-            player.sendMessage("§cPlease enter a player name!");
+            player.sendMessage(configManager.get("chatPrefix") + "§cPlease enter a player name!");
             await this.showMuteManager(player);
             return;
         }
@@ -359,11 +359,11 @@ export class CommandGUI {
         if (muteSettings[player.name].muteAll) {
             muteSettings[player.name].exceptions = muteSettings[player.name].exceptions || [];
             muteSettings[player.name].exceptions.push(targetName);
-            player.sendMessage(`§aAdded ${targetName} to mute exceptions`);
+            player.sendMessage(configManager.get("chatPrefix") + `§aAdded ${targetName} to mute exceptions`);
         } else {
             muteSettings[player.name].muted = muteSettings[player.name].muted || [];
             muteSettings[player.name].muted.push(targetName);
-            player.sendMessage(`§aMuted player: ${targetName}`);
+            player.sendMessage(configManager.get("chatPrefix") + `§aMuted player: ${targetName}`);
         }
         
         muteDB.set("muteSettings", muteSettings);
@@ -384,7 +384,7 @@ export class CommandGUI {
         const targetName = this.getSelectedPlayer(response.formValues.slice(0, 3));
 
         if (!targetName) {
-            player.sendMessage("§cPlease specify a player!");
+            player.sendMessage(configManager.get("chatPrefix") + "§cPlease specify a player!");
             return;
         }
 
@@ -394,7 +394,7 @@ export class CommandGUI {
         const ingameNametag = playerDB.getCustomization(targetName, "nametag", "ingame");
 
         player.sendMessage([
-            `§6=== Info for ${targetName} ===`,
+            `${configManager.get("chatPrefix")}§6=== Info for ${targetName} ===`,
             chatTitle ? `§7Chat Title: §f${chatTitle}` : "§7Chat Title: §8None",
             chatNametag ? `§7Chat Nametag: §f${chatNametag}` : "§7Chat Nametag: §8None",
             ingameTitle ? `§7In-game Title: §f${ingameTitle.text} (${ingameTitle.position})` : "§7In-game Title: §8None",

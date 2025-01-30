@@ -1,27 +1,22 @@
-import { configDB } from "./db.js";
-
 // Default configuration
 const defaultConfig = {
+    chatPrefix: "§l[§r§dMimi Inka§f§l]§r ",
+
     // Command prefixes
-    prefixes: ["!", ";"],
-    
-    // Title for special user
-    yotbuTitle: "§l§6[§eSunshine Overlord§6]§r",
-    
+    prefixes: [".", "!"],
+
     // GUI Item settings
     guiItem: {
         typeId: "minecraft:stick",
-        nameTag: "Mimi Inka",
-        lore: ["§7Right click to open menu", "§7Manage titles and mutes"]
+        nameTag: "Mimi Inka"
     },
-    
+
     // GUI open settings
-    guiOpenDelay: 1.5, // seconds
+    guiOpenDelay: 3, // seconds
     guiOpenMessage: "§6Close chat to open the menu in §e{delay}§6 seconds...",
-    
+
     // Permission settings
     adminTag: "mimi",
-    userTag: "title_user",
 
     // Chat settings
     globalMute: false,
@@ -29,7 +24,6 @@ const defaultConfig = {
     // Glyph settings
     glyphPrefix: "E7", // The glyph file prefix (e.g., E7 for glyph_E7.png)
     glyphs: [], // Will be populated with generated codes
-    defaultGlyph: null // Will be set to first glyph
 };
 
 class ConfigManager {
@@ -38,13 +32,6 @@ class ConfigManager {
     }
 
     initializeConfig() {
-        const config = this.getDefaultConfig();
-        for (const [key, value] of Object.entries(config)) {
-            if (!configDB.has(key)) {
-                configDB.set(key, value);
-            }
-        }
-        // Generate glyphs after initialization
         this.generateGlyphs();
     }
 
@@ -54,14 +41,11 @@ class ConfigManager {
     }
 
     get(key) {
-        return configDB.get(key, defaultConfig[key]);
+        return defaultConfig[key];
     }
 
     set(key, value) {
-        if (!(key in defaultConfig)) {
-            throw new Error(`Invalid config key: ${key}`);
-        }
-        configDB.set(key, value);
+        defaultConfig[key] = value;
     }
 
     append(key, value) {
@@ -95,9 +79,6 @@ class ConfigManager {
 
         // Update config
         this.set("glyphs", glyphs);
-        if (glyphs.length > 0) {
-            this.set("defaultGlyph", glyphs[0]);
-        }
     }
 
     getAll() {

@@ -5,7 +5,7 @@ import { CommandGUI } from "./gui.js";
 export class MenuManager {
     static openMenuWithDelay(player) {
         if (!this.checkPermission(player)) {
-            player.sendMessage("§cYou don't have permission to use this!");
+            player.sendMessage(configManager.get("chatPrefix") + "§cYou don't have permission to use this!");
             return;
         }
 
@@ -24,8 +24,7 @@ export class MenuManager {
 
     static checkPermission(player) {
         const adminTag = configManager.get("adminTag");
-        const userTag = configManager.get("userTag");
-        return player.hasTag(adminTag) || player.hasTag(userTag);
+        return player.hasTag(adminTag);
     }
 
     static isGuiItem(itemStack) {
@@ -40,8 +39,10 @@ world.beforeEvents.itemUse.subscribe((event) => {
     const player = event.source;
     const item = event.itemStack;
 
-    if (MenuManager.isGuiItem(item)) {
-        event.cancel = true;
-        MenuManager.openMenuWithDelay(player);
-    }
+    system.run(() => {
+        if (MenuManager.isGuiItem(item) && MenuManager.checkPermission(player)) {
+            event.cancel = true;
+            CommandGUI.showMainMenu(player);
+        }
+    })
 });
