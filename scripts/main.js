@@ -1,3 +1,5 @@
+console.log("Mimi Inka loaded!");
+
 import { world, system } from "@minecraft/server";
 import { playerDB, muteDB } from "./db.js";
 import { configManager } from "./config.js";
