@@ -1,5 +1,5 @@
 import { world } from "@minecraft/server";
-import { ActionFormData, ModalFormData } from "@minecraft/server-ui";
+import { ActionFormData, MessageFormData, ModalFormData } from "@minecraft/server-ui";
 import { playerDB, muteDB } from "./db.js";
 import { configManager } from "./config.js";
 
@@ -11,7 +11,8 @@ export class CommandGUI {
             .button("Manage Titles")
             .button("Manage Nametags")
             .button("Manage Mutes")
-            .button("View Player Info");
+            .button("View Player Info")
+            .button("Show All Customizations");
 
         const response = await form.show(player);
         if (response.canceled) return;
@@ -29,6 +30,9 @@ export class CommandGUI {
             case 3:
                 await this.showPlayerInfo(player);
                 break;
+            case 4:
+                await this.showAllCustomizations(player);
+                break;
         }
     }
 
@@ -43,7 +47,7 @@ export class CommandGUI {
 
         // Combine lists (online players first, then offline players not already included)
         const allOptions = [...new Set([...onlinePlayers, ...allPlayers])];
-        
+
         return {
             onlinePlayers,
             allPlayers: allOptions
@@ -52,15 +56,15 @@ export class CommandGUI {
 
     static async showPlayerSelector(form, initialValue = "") {
         const { onlinePlayers, allPlayers } = this.getPlayerOptions();
-        
+
         // Add manual name input (first priority)
         form.textField("Player Name:", "Enter player name", initialValue);
-        
+
         // Add online players dropdown if any are online (second priority)
         if (onlinePlayers.length > 0) {
             form.dropdown("Or Select Online Player:", ["<Manual Entry>", ...onlinePlayers], 0);
         }
-        
+
         // Add all known players dropdown (third priority)
         if (allPlayers.length > 0) {
             form.dropdown("Or Select Known Player:", ["<Manual Entry>", ...allPlayers], 0);
@@ -69,37 +73,37 @@ export class CommandGUI {
 
     static getSelectedPlayer(values) {
         const [manualName, onlineIndex, historyIndex] = values;
-        
+
         // First priority: Manual name if not empty
         if (manualName.trim()) {
             return manualName.trim();
         }
-        
+
         const { onlinePlayers, allPlayers } = this.getPlayerOptions();
-        
+
         // Second priority: Selected online player
         if (onlineIndex > 0 && onlinePlayers[onlineIndex - 1]) {
             return onlinePlayers[onlineIndex - 1];
         }
-        
+
         // Third priority: Selected historical player
         if (historyIndex > 0 && allPlayers[historyIndex - 1]) {
             return allPlayers[historyIndex - 1];
         }
-        
+
         return null;
     }
 
     static async showTitleManager(player) {
         const glyphs = configManager.get("glyphs");
         const hasGlyphs = glyphs && glyphs.length > 0;
-        
+
         const form = new ModalFormData()
             .title("Title Manager");
 
         // Add player selection options
         await this.showPlayerSelector(form);
-        
+
         form.dropdown("Mode:", ["Chat", "In-game"], 0);
 
         if (hasGlyphs) {
@@ -132,7 +136,7 @@ export class CommandGUI {
         }
 
         const mode = modeIndex === 0 ? "chat" : "ingame";
-        
+
         let title, position;
         if (hasGlyphs) {
             const [useGlyph, glyphIndex, customText, positionIndex] = rest;
@@ -168,7 +172,7 @@ export class CommandGUI {
             if (targetPlayer) {
                 // Reset nametag first
                 targetPlayer.nameTag = targetName;
-                
+
                 if (title) {
                     const currentName = playerDB.getCustomization(targetName, "nametag", "ingame") || targetName;
                     switch (position) {
@@ -193,13 +197,13 @@ export class CommandGUI {
     static async showNametagManager(player) {
         const glyphs = configManager.get("glyphs");
         const hasGlyphs = glyphs && glyphs.length > 0;
-        
+
         const form = new ModalFormData()
             .title("Nametag Manager");
 
         // Add player selection options
         await this.showPlayerSelector(form);
-        
+
         form.dropdown("Mode:", ["Chat", "In-game"], 0);
 
         if (hasGlyphs) {
@@ -228,7 +232,7 @@ export class CommandGUI {
         }
 
         const mode = modeIndex === 0 ? "chat" : "ingame";
-        
+
         let nametag;
         if (hasGlyphs) {
             const [useGlyph, glyphIndex, customText] = rest;
@@ -252,7 +256,7 @@ export class CommandGUI {
                 if (targetPlayer) {
                     // Reset nametag first
                     targetPlayer.nameTag = targetName;
-                    
+
                     // Check for title
                     const title = playerDB.getCustomization(targetName, "title", "ingame");
                     if (title) {
@@ -284,18 +288,18 @@ export class CommandGUI {
     static async showMuteManager(player) {
         const muteSettings = muteDB.get("muteSettings", {});
         const playerSettings = muteSettings[player.name] || {};
-        
+
         let body = "";
         if (playerSettings.muteAll) {
             const exceptions = playerSettings.exceptions || [];
-            body = "Mute Status: All players muted\n\nExceptions:\n" + 
-                (exceptions.length > 0 
+            body = "Mute Status: All players muted\n\nExceptions:\n" +
+                (exceptions.length > 0
                     ? exceptions.map(p => `- ${p}`).join("\n")
                     : "None");
         } else {
             const muted = playerSettings.muted || [];
-            body = "Muted players:\n" + 
-                (muted.length > 0 
+            body = "Muted players:\n" +
+                (muted.length > 0
                     ? muted.map(p => `- ${p}`).join("\n")
                     : "None");
         }
@@ -319,7 +323,7 @@ export class CommandGUI {
                 }
                 muteSettings[player.name] = playerSettings;
                 muteDB.set("muteSettings", muteSettings);
-                player.sendMessage(configManager.get("chatPrefix") + (playerSettings.muteAll 
+                player.sendMessage(configManager.get("chatPrefix") + (playerSettings.muteAll
                     ? "§aAll players will now be muted (except those you unmute)"
                     : "§aAll players will now be unmuted (except those you mute)"
                 ));
@@ -355,7 +359,7 @@ export class CommandGUI {
 
         let muteSettings = muteDB.get("muteSettings", {});
         muteSettings[player.name] = muteSettings[player.name] || {};
-        
+
         if (muteSettings[player.name].muteAll) {
             muteSettings[player.name].exceptions = muteSettings[player.name].exceptions || [];
             muteSettings[player.name].exceptions.push(targetName);
@@ -365,7 +369,7 @@ export class CommandGUI {
             muteSettings[player.name].muted.push(targetName);
             player.sendMessage(configManager.get("chatPrefix") + `§aMuted player: ${targetName}`);
         }
-        
+
         muteDB.set("muteSettings", muteSettings);
         await this.showMuteManager(player);
     }
@@ -376,7 +380,7 @@ export class CommandGUI {
 
         // Add player selection options
         await this.showPlayerSelector(form);
-        
+
         const response = await form.show(player);
         if (response.canceled) return;
 
@@ -400,5 +404,60 @@ export class CommandGUI {
             ingameTitle ? `§7In-game Title: §f${ingameTitle.text} (${ingameTitle.position})` : "§7In-game Title: §8None",
             ingameNametag ? `§7In-game Nametag: §f${ingameNametag}` : "§7In-game Nametag: §8None"
         ].join("\n"));
+    }
+
+    static async showAllCustomizations(player) {
+        const allPlayers = playerDB.getAllPlayers(); // Get all players from the database
+        let customizationList = [];
+    
+        allPlayers.forEach(player => {
+            const chatTitle = playerDB.getCustomization(player, "title", "chat");
+            const chatNametag = playerDB.getCustomization(player, "nametag", "chat");
+            
+            const ingameTitle = playerDB.getCustomization(player, "title", "ingame");
+            const ingameNametag = playerDB.getCustomization(player, "nametag", "ingame");
+    
+            // Prepare customization details
+            let details = `§6${player}: §r\n`; // Highlight player name in gold
+    
+            if (chatTitle) {
+                details += `  Chat Title: §b${chatTitle}§r\n`; // Chat title in aqua
+            }
+            if (chatNametag) {
+                details += `  Chat Nametag: §b${chatNametag}§r\n`; // Chat nametag in aqua
+            }
+            if (ingameTitle) {
+                details += `  In-game Title: §a${ingameTitle.text} (${ingameTitle.position})§r\n`; // In-game title in green
+            }
+            if (ingameNametag) {
+                details += `  In-game Nametag: §a${ingameNametag}§r\n`; // In-game nametag in green
+            }
+    
+            // If no customizations exist, still show the player name
+            if (!chatTitle && !chatNametag && !ingameTitle && !ingameNametag) {
+                details += "  No customizations available.\n"; // Optional message for clarity
+            }
+    
+            customizationList.push(details);
+        });
+    
+        // Display the customizations in the modal form
+        this.displayCustomizationsInGUI(customizationList, player);
+    }
+
+    static async displayCustomizationsInGUI(customizationList, player) {
+        // Create a formatted string for the customizations
+        let formattedCustomizations = customizationList.map(entry => {
+            return `${entry}`; // Format each entry
+        }).join("\n");
+
+        // Create a modal form to display the customizations
+        const form = new ActionFormData()
+            .title("All Player Customizations")
+            .body(formattedCustomizations)
+            .button("Close");
+
+        // Show the form to the player
+        await form.show(player);
     }
 }

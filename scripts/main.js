@@ -5,7 +5,7 @@ import { commandManager } from "./commands.js";
 
 // Import admin commands - this is important to register them!
 import "./admin.js";
-import "./addons.js";
+import "./plugins.js";
 
 // Initialize config
 configManager.initializeConfig();
