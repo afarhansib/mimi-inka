@@ -40,14 +40,42 @@ commandManager.register("globalmute", {
     }
 });
 
+function formatTimestamp(ms) {
+    const date = new Date(ms);
+    const now = Date.now();
+    const diff = now - ms;
+
+    const seconds = Math.floor(diff / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours   = Math.floor(minutes / 60);
+    const days    = Math.floor(hours / 24);
+
+    let relative = "";
+    if (days > 0) relative = `${days} day${days > 1 ? "s" : ""} ago`;
+    else if (hours > 0) relative = `${hours} hour${hours > 1 ? "s" : ""} ago`;
+    else if (minutes > 0) relative = `${minutes} minute${minutes > 1 ? "s" : ""} ago`;
+    else relative = "just now";
+
+    return `${date.toLocaleString()} (§7${relative}§r)`;
+}
+
 commandManager.register("playerinfo", {
     description: "Show player information",
     permission: "admin",
     execute: (player, args) => {
-        // console.log(JSON.stringify(args, null, 2));
         const info = playerDB.getPlayerInfo(player.name);
-        player.sendMessage(`${configManager.get("chatPrefix")}§ePlayer Info: ${JSON.stringify(info, null, 2)}`);
-        return;
+
+        let formattedInfo = `${configManager.get("chatPrefix")}§ePlayer Info:\n`;
+
+        for (const [name, data] of Object.entries(info)) {
+            formattedInfo += `§r§e"${name}": {\n`;
+            formattedInfo += `  §r§7"firstJoin": §f${formatTimestamp(data.firstJoin)},\n`;
+            formattedInfo += `  §r§7"lastJoin": §f${formatTimestamp(data.lastJoin)},\n`;
+            formattedInfo += `  §r§7"joinCount": §f${data.joinCount}\n`;
+            formattedInfo += `§e},\n`;
+        }
+
+        player.sendMessage(formattedInfo);
     }
 });
 
