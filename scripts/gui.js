@@ -58,16 +58,16 @@ export class CommandGUI {
         const { onlinePlayers, allPlayers } = this.getPlayerOptions();
 
         // Add manual name input (first priority)
-        form.textField("Player Name:", "Enter player name", initialValue);
+        form.textField("Player Name:", "Enter player name", { defaultValue: initialValue });
 
         // Add online players dropdown if any are online (second priority)
         if (onlinePlayers.length > 0) {
-            form.dropdown("Or Select Online Player:", ["<Manual Entry>", ...onlinePlayers], 0);
+            form.dropdown("Or Select Online Player:", ["<Manual Entry>", ...onlinePlayers]);
         }
 
         // Add all known players dropdown (third priority)
         if (allPlayers.length > 0) {
-            form.dropdown("Or Select Known Player:", ["<Manual Entry>", ...allPlayers], 0);
+            form.dropdown("Or Select Known Player:", ["<Manual Entry>", ...allPlayers]);
         }
     }
 
@@ -104,23 +104,23 @@ export class CommandGUI {
         // Add player selection options
         await this.showPlayerSelector(form);
 
-        form.dropdown("Mode:", ["Chat", "In-game"], 0);
+        form.dropdown("Mode:", ["Chat", "In-game"]);
 
         if (hasGlyphs) {
-            form.toggle("Use Glyph", false);
+            form.toggle("Use Glyph", { defaultValue: false });
             // Show each glyph with its hex position 
             const glyphOptions = glyphs.map((glyph, index) => {
                 const hex = index.toString(16).padStart(2, '0').toUpperCase();
                 return `${hex} ${glyph}`; // Shows like "⚔ (A4)"
             });
-            form.dropdown("Glyph:", glyphOptions, 0);
+            form.dropdown("Glyph:", glyphOptions);
             form.textField("Custom Text:", "Enter custom text (optional)");
         } else {
             form.textField("Title:", "Enter title (or leave empty to remove)");
         }
 
         if (hasGlyphs) {
-            form.dropdown("Position:", ["Top", "Before", "After", "Below"], 0);
+            form.dropdown("Position:", ["Top", "Before", "After", "Below"]);
         }
 
         const response = await form.show(player);
@@ -204,16 +204,16 @@ export class CommandGUI {
         // Add player selection options
         await this.showPlayerSelector(form);
 
-        form.dropdown("Mode:", ["Chat", "In-game"], 0);
+        form.dropdown("Mode:", ["Chat", "In-game"]);
 
         if (hasGlyphs) {
-            form.toggle("Use Glyph", false);
+            form.toggle("Use Glyph", {defaultValue: false});
             // Show each glyph with its hex position
             const glyphOptions = glyphs.map((glyph, index) => {
                 const hex = index.toString(16).padStart(2, '0').toUpperCase();
                 return `${glyph} (${hex})`; // Shows like "⚔ (A4)"
             });
-            form.dropdown("Glyph:", glyphOptions, 0);
+            form.dropdown("Glyph:", glyphOptions);
             form.textField("Custom Text:", "Enter custom text (optional)");
         } else {
             form.textField("Nametag:", "Enter nametag (or leave empty to remove)");
@@ -409,17 +409,17 @@ export class CommandGUI {
     static async showAllCustomizations(player) {
         const allPlayers = playerDB.getAllPlayers(); // Get all players from the database
         let customizationList = [];
-    
+
         allPlayers.forEach(player => {
             const chatTitle = playerDB.getCustomization(player, "title", "chat");
             const chatNametag = playerDB.getCustomization(player, "nametag", "chat");
-            
+
             const ingameTitle = playerDB.getCustomization(player, "title", "ingame");
             const ingameNametag = playerDB.getCustomization(player, "nametag", "ingame");
-    
+
             // Prepare customization details
             let details = `§6${player}: §r\n`; // Highlight player name in gold
-    
+
             if (chatTitle) {
                 details += `  Chat Title: §b${chatTitle}§r\n`; // Chat title in aqua
             }
@@ -432,15 +432,15 @@ export class CommandGUI {
             if (ingameNametag) {
                 details += `  In-game Nametag: §a${ingameNametag}§r\n`; // In-game nametag in green
             }
-    
+
             // If no customizations exist, still show the player name
             if (!chatTitle && !chatNametag && !ingameTitle && !ingameNametag) {
                 details += "  No customizations available.\n"; // Optional message for clarity
             }
-    
+
             customizationList.push(details);
         });
-    
+
         // Display the customizations in the modal form
         this.displayCustomizationsInGUI(customizationList, player);
     }
