@@ -73,7 +73,7 @@ system.runInterval(() => {
         // Send TPS to all active streamers
         for (const playerName of tpsStreamers) {
             // Find the player by filtering through online players
-            const player = players.find(p => p?.name === playerName);
+            const player = players.find(p => p && p.name === playerName);
             if (player) {
                 // Create the action bar message
                 const actionBarMessage = [
