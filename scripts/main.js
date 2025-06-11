@@ -61,8 +61,8 @@ world.beforeEvents.chatSend.subscribe(event => {
         // Player is muted if:
         // 1. muteAll is enabled and they're not in exceptions, OR
         // 2. muteAll is disabled and they're in the muted list
-        const isMuted = (playerMuteSettings.muteAll && !playerMuteSettings.exceptions.includes(sender.name)) ||
-                        (!playerMuteSettings.muteAll && playerMuteSettings.muted.includes(sender.name));
+        const isMuted = (playerMuteSettings.muteAll && !playerMuteSettings?.exceptions?.includes(sender.name)) ||
+                        (!playerMuteSettings.muteAll && playerMuteSettings?.muted?.includes(sender.name));
     
         if (!isMuted) {
             // Check if player has aliases shown (hidden by default)
