@@ -1,4 +1,4 @@
-import { world, system } from "@minecraft/server";
+import { world, system, GameMode } from "@minecraft/server";
 import { commandManager } from "./commands";
 import { playerDB } from "./db";
 
@@ -97,7 +97,7 @@ commandManager.register("gms", {
     aliases: ["gms"],
     execute: (sender, args) => {
         system.run(() => {
-            sender.setGameMode('survival')
+            sender.setGameMode(GameMode.Survival)
             sender.removeEffect('night_vision')
         })
     }
@@ -109,7 +109,7 @@ commandManager.register("gmp", {
     aliases: ["gmp"],
     execute: (sender, args) => {
         system.run(() => {
-            sender.setGameMode('spectator')
+            sender.setGameMode(GameMode.Spectator)
         })
     }
 });
@@ -120,7 +120,7 @@ commandManager.register("gmc", {
     aliases: ["gmc"],
     execute: (sender, args) => {
         system.run(() => {
-            sender.setGameMode('creative')
+            sender.setGameMode(GameMode.Creative)
         })
     }
 });
@@ -157,8 +157,8 @@ commandManager.register("tp", {
     execute: (sender, args) => {
         const tpTarget = (args.join(' ')).split('@')[1] || args.join(' ')
         system.run(async () => {
-            if (sender.getGameMode() !== 'spectator') {
-                sender.setGameMode('spectator')
+            if (sender.getGameMode() !== GameMode.Spectator) {
+                sender.setGameMode(GameMode.Spectator)
             }
 
             // Add delay before teleporting
