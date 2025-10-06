@@ -17,6 +17,8 @@ world.beforeEvents.chatSend.subscribe(event => {
     const sender = event.sender;
     const msg = event.message;
 
+    console.log(`[CHAT] <${sender.name}> ${msg}`)
+
     // ☆ Check for command prefix FIRST! ☆
     const prefixes = configManager.get("prefixes");
     const prefix = prefixes.find(p => msg.startsWith(p));
