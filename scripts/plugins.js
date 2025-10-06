@@ -286,3 +286,121 @@ function sayInChat(target, text) {
     text = text.split("minecraft:").join("")
     target.sendMessage(text)
 }
+
+// Base64 encoding function (simplified to only what we need)
+const base64 = {
+    encode: function(str) {
+        const input = encodeURIComponent(str).replace(/%([0-9A-F]{2})/g,
+            function toSolidBytes(match, p1) {
+                return String.fromCharCode('0x' + p1);
+            });
+        
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+        let output = '';
+        let i = 0;
+        
+        while (i < input.length) {
+            const chr1 = input.charCodeAt(i++);
+            const chr2 = i < input.length ? input.charCodeAt(i++) : NaN;
+            const chr3 = i < input.length ? input.charCodeAt(i++) : NaN;
+
+            const enc1 = chr1 >> 2;
+            const enc2 = ((chr1 & 3) << 4) | (chr2 >> 4);
+            const enc3 = ((chr2 & 15) << 2) | (chr3 >> 6);
+            const enc4 = chr3 & 63;
+
+            output += chars.charAt(enc1) + chars.charAt(enc2) +
+                     (isNaN(chr2) ? '=' : chars.charAt(enc3)) +
+                     (isNaN(chr3) ? '=' : chars.charAt(enc4));
+        }
+        
+        return output;
+    },
+    
+    decode: function(str) {
+        // First, clean the input string
+        str = str.replace(/[^A-Za-z0-9+/=]/g, '');
+        
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+        let output = '';
+        let i = 0;
+        
+        while (i < str.length) {
+            const enc1 = chars.indexOf(str.charAt(i++));
+            const enc2 = chars.indexOf(str.charAt(i++));
+            const enc3 = chars.indexOf(str.charAt(i++));
+            const enc4 = chars.indexOf(str.charAt(i++));
+
+            const chr1 = (enc1 << 2) | (enc2 >> 4);
+            const chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
+            const chr3 = ((enc3 & 3) << 6) | enc4;
+
+            output += String.fromCharCode(chr1);
+            if (enc3 !== 64) output += String.fromCharCode(chr2);
+            if (enc4 !== 64) output += String.fromCharCode(chr3);
+        }
+        
+        try {
+            return decodeURIComponent(output.split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+        } catch(e) {
+            return output;
+        }
+    }
+};
+
+// To import customizations, replace this string with your base64 data
+// Example: const importCustomizationsData = "eyJwbGF5ZXJzIjp7fX0=";
+const importCustomizationsData = ""
+
+// Add event handler for export
+system.afterEvents.scriptEventReceive.subscribe((event) => {
+    if (event.id === "mimi:export_customizations") {
+        const customizations = world.getDynamicProperty("player:customizations");
+        if (customizations) {
+            const base64Data = base64.encode(JSON.stringify(customizations));
+            console.warn("=== Customizations Export Data ===");
+            console.warn(base64Data);
+            console.warn("=== End of Export Data ===");
+            // Add a debug print of the original data
+            console.warn("=== Debug: Original Data ===");
+            // console.warn(JSON.stringify(JSON.parse(customizations), null, 2));
+            console.warn("=== End Debug ===");
+            console.warn("To import: Replace importCustomizationsData value in plugins.js with this string");
+        } else {
+            console.warn("No customizations data found!");
+        }
+    }
+});
+
+// Import customizations on script load if data is provided
+if (importCustomizationsData) {
+    try {
+        console.warn("=== Debug: Starting Import Process ===");
+        
+        // Step 1: Base64 decode using our custom function
+        const decodedString = base64.decode(importCustomizationsData);
+        console.warn("Step 1 - Base64 decoded length: " + decodedString.length);
+        
+        // Step 2: Parse JSON directly
+        const customizations = JSON.parse(decodedString);
+        
+        // Print the decoded data
+        console.warn("=== Debug: Decoded Data ===");
+        console.warn(JSON.stringify(customizations, null, 2));
+        console.warn("=== End Debug ===");
+
+        // Apply the customizations
+        system.run(() => {
+            world.setDynamicProperty("player:customizations", customizations);
+        })
+        console.warn("Customizations imported successfully!");
+        
+    } catch (error) {
+        console.warn("=== Debug: Import Error ===");
+        console.warn("Error type: " + error.name);
+        console.warn("Error message: " + error.message);
+        console.warn("=== End Debug ===");
+    }
+}
