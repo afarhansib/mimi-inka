@@ -1,0 +1,29 @@
+{
+    "format_version": 2,
+    "header": {
+        "description": "Mimi Inka",
+        "name": "Mimi Inka",
+        "uuid": "b75da37b-7800-4e95-a421-1b654307c237",
+        "version": [
+            1,
+            0,
+            2
+        ],
+        "min_engine_version": [
+            1,
+            20,
+            80
+        ]
+    },
+    "modules": [
+        {
+            "type": "resources",
+            "uuid": "20082c0c-fba8-42fc-b5d4-b4b23d5419e2",
+            "version": [
+                1,
+                0,
+                0
+            ]
+        }
+    ]
+}
