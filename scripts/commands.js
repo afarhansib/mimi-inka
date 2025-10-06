@@ -370,8 +370,8 @@ commandManager.register("mute", {
         muteSettings[player.name] = muteSettings[player.name] || { muted: [], exceptions: [] };
 
         // Mute logic
-        if (!muteSettings[player.name].muted.includes(targetName)) {
-            muteSettings[player.name].muted.push(targetName);
+        if (!muteSettings[player.name]?.muted?.includes(targetName)) {
+            muteSettings[player.name]?.muted?.push(targetName);
             const index = muteSettings[player.name].exceptions.indexOf(targetName);
             if (index !== -1) {
                 muteSettings[player.name].exceptions.splice(index, 1); // Remove from exceptions if muted
