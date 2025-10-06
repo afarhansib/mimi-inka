@@ -3,7 +3,7 @@ const defaultConfig = {
     chatPrefix: "§l[§r§dMimi Inka§f§l]§r ",
 
     // Command prefixes
-    prefixes: [".", "!"],
+    prefixes: [".", "!", ";"],
 
     // GUI Item settings
     guiItem: {
